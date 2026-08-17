@@ -38,11 +38,6 @@ struct RotaryClockFace: View {
         continuousMinute * 60 + second
     }
 
-    /// 当前小时的起点。Widget 的系统 `.timer` 文本用它实时显示“分钟:秒钟”。
-    private var startOfHour: Date {
-        calendar.dateInterval(of: .hour, for: date)?.start ?? date
-    }
-
     var body: some View {
         GeometryReader { proxy in
             let size = proxy.size
@@ -73,6 +68,10 @@ struct RotaryClockFace: View {
                 y: dialCenter.y
             )
 
+            // 小时与转盘使用原设计的同一水平基准，不额外右移。
+            // 之前只剩“时”是中文日期格式附加字词造成的，不是坐标问题。
+            let hourCenterX = dialCenter.x + 30
+
             ZStack {
                 dialLayer(
                     size: size,
@@ -90,19 +89,21 @@ struct RotaryClockFace: View {
                 // 这是设计图中最大的数字，不属于任何转盘。
                 // 字号倍率：中号 0.20、大号 0.18。
                 // position 的 x 倍率控制小时文字左右位置。
+                // 透明 Widget 宿主目前会丢弃小时的实时 currentDate Text，或按
+                // 中文 locale 追加“时”。小时采用当前 timeline entry 的数字值；
+                // Provider 每分钟提供条目，所以整点时会变为下一小时。分秒仍使用
+                // 系统实时 currentDate，保证秒级更新与 59:59 → 00:00 循环。
                 HStack(spacing: -unit * (compact ? 0.018 : 0.014)) {
                     // 两个数字分别排版，各自保留完整字形边界；HStack 的负
                     // spacing 只让两个边界互相靠近，不会裁掉第二位右侧。
                     Text(String(hourText.prefix(1)))
                     Text(String(hourText.suffix(1)))
                 }
-                    // 效果图接近 SF Pro Rounded Black：粗笔画、圆角端点，
-                    // 尤其能还原数字 1 的斜顶与数字 6 的厚圆环。
                     .font(.system(size: unit * (compact ? 0.20 : 0.22), weight: .black, design: .rounded))
                     .monospacedDigit()
                     .fixedSize()
                     .foregroundStyle(.white)
-                    .position(x: dialCenter.x + 30, y: focusCenter.y)
+                    .position(x: hourCenterX, y: focusCenter.y)
                     .zIndex(2)
 
                 // 胶囊同时显示当前分钟和当前秒，例如“40－05”。
@@ -209,27 +210,28 @@ struct RotaryClockFace: View {
                 }
 
 #if ROTARY_WIDGET
-            // Widget 扩展不会持续运行；分秒由系统 Timer 在宿主进程实时更新。
-            // 不要依据 entry.minute 手动补“0”：透明模式可能长期复用旧 entry，
-            // Timer 已到 11:59 时静态前导零仍存在，就会错误显示成 011:59。
+            // MARK: iOS 26 实时“当前分钟:秒钟”
+            // 不能用 `timerInterval`：它显示的是范围内的累计时长，会从
+            // 59:59 继续到 60:00、65:00，且范围结束时停止。TimeDataSource
+            // 由 Widget 宿主持续提供真实当前时间，不依赖 Extension 被秒级唤醒；
+            // Date.FormatStyle 会按钟表语义自动从 59:59 回到 00:00，并保留两位
+            // 分钟与两位秒钟，例如 08:05。
             Text(
-                timerInterval: startOfHour...startOfHour.addingTimeInterval(3600),
-                countsDown: false,
-                showsHours: false
+                .currentDate,
+                format: .dateTime.minute(.twoDigits).second(.twoDigits)
             )
             .font(.system(size: unit * (compact ? 0.085 : 0.085), weight: .semibold, design: .rounded))
             .monospacedDigit()
             .foregroundStyle(.white)
             .lineLimit(1)
-            // 保留你设置的 0.30 unit 窄胶囊；极端字体尺寸下只缩小文字，
-            // 不裁掉分钟十位，也不改变胶囊宽度。
+            // 胶囊空间不足时让系统动态文字一起轻微缩小，但不裁切它。
             .minimumScaleFactor(0.72)
             .frame(
                 width: capsuleWidth,
                 height: capsuleHeight,
                 alignment: .center
             )
-            // 系统动态 Timer 的可见字形会略微偏左，整体向右微调。
+            // 系统动态时钟的可见字形会略微偏左，整体向右微调。
             .offset(x: unit *  (compact ? 0.03 : 0.05))
 
 #else
@@ -344,7 +346,7 @@ private struct DialRing: View {
     var body: some View {
         // 小圆盘按半径自动减小标签内缩和字号，避免数字挤在一起。
         let labelInset = min(unit * 0.055, radius * 0.25)
-        let labelFontSize = min(unit * 0.040, radius * 0.22)
+        let labelFontSize = min(unit * 0.060, radius * 0.22)
 
         let ring = ZStack {
             ForEach(0..<maximum, id: \.self) { index in

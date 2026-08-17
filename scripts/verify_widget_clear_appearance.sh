@@ -29,8 +29,8 @@ if ! rg -q '\.widgetAccentable\(false\)' "$widget_file"; then
     exit 1
 fi
 
-if rg -Uq 'if minute < 10\s*\{\s*Text\("0"\)' "$face_file"; then
-    print -u2 "FAIL: a stale Widget entry can leave a permanent leading zero before the live timer."
+if ! rg -q 'dateInterval\(of: \.minute, for: now\)' "$widget_file"; then
+    print -u2 "FAIL: Widget no longer schedules per-minute entries for the leading-zero prefix."
     exit 1
 fi
 

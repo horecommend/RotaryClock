@@ -17,19 +17,19 @@ if ! rg -q 'x: capsuleWidth / 2 - readoutCenterSeparation / 2' "$face_file" || \
     exit 1
 fi
 
-# Widget 必须保留完整系统 Timer，不能退回静态秒数或裁切动态 Text。
-if [[ "$(rg -c 'timerInterval: startOfHour\.\.\.startOfHour\.addingTimeInterval\(3600\)' "$face_file")" -ne 1 ]]; then
-    print -u2 "FAIL: widget fixed MM:SS live timer source is missing or duplicated."
+# Widget 必须使用系统当前时间源，不能退回静态秒数或会累计分钟的 timerInterval。
+if [[ "$(rg -c '\.dateTime\.minute\(\.twoDigits\)\.second\(\.twoDigits\)' "$face_file")" -ne 1 ]]; then
+    print -u2 "FAIL: widget live current-clock MM:SS source is missing or duplicated."
     exit 1
 fi
 
-if ! rg -q 'showsHours: false' "$face_file"; then
-    print -u2 "FAIL: widget timer still reserves invisible hour-field width."
+if rg -q 'timerInterval:' "$face_file"; then
+    print -u2 "FAIL: widget still uses a duration timer instead of current clock time."
     exit 1
 fi
 
-if rg -Uq 'if minute < 10\s*\{\s*Text\("0"\)' "$face_file"; then
-    print -u2 "FAIL: widget timer still has a stale-entry leading zero."
+if ! rg -q '\.minute\(\.twoDigits\)\.second\(\.twoDigits\)' "$face_file"; then
+    print -u2 "FAIL: widget minute or second field is no longer fixed to two digits."
     exit 1
 fi
 
