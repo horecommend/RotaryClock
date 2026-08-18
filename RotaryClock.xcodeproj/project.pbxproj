@@ -13,6 +13,7 @@
 		A10000000000000000000004 /* RotaryClockFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* RotaryClockFace.swift */; };
 		A10000000000000000000005 /* RotaryClockWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* RotaryClockWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A10000000000000000000006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* Assets.xcassets */; };
+		E10000000000000000000001 /* CarPlayClockSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000001 /* CarPlayClockSceneDelegate.swift */; };
 		D10000000000000000000001 /* ClockHandRotationKit in Frameworks */ = {isa = PBXBuildFile; productRef = D30000000000000000000001 /* ClockHandRotationKit */; };
 		D10000000000000000000002 /* ClockHandRotationKit in Frameworks */ = {isa = PBXBuildFile; productRef = D30000000000000000000001 /* ClockHandRotationKit */; };
 /* End PBXBuildFile section */
@@ -50,6 +51,9 @@
 		A20000000000000000000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E20000000000000000000001 /* CarPlayClockSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayClockSceneDelegate.swift; sourceTree = "<group>"; };
+		E20000000000000000000002 /* RotaryClockApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RotaryClockApp.entitlements; sourceTree = "<group>"; };
+		E20000000000000000000003 /* RotaryClockApp.device.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RotaryClockApp.device.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +90,9 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000001 /* RotaryClockApp.swift */,
+				E20000000000000000000001 /* CarPlayClockSceneDelegate.swift */,
+				E20000000000000000000002 /* RotaryClockApp.entitlements */,
+				E20000000000000000000003 /* RotaryClockApp.device.entitlements */,
 				A20000000000000000000008 /* Assets.xcassets */,
 				A20000000000000000000006 /* Info.plist */,
 			);
@@ -227,6 +234,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* RotaryClockApp.swift in Sources */,
+				E10000000000000000000001 /* CarPlayClockSceneDelegate.swift in Sources */,
 				A10000000000000000000002 /* RotaryClockFace.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -292,6 +300,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_ENTITLEMENTS = RotaryClockApp/RotaryClockApp.device.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = RotaryClockApp/RotaryClockApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3ZLBAV6S6Y;
@@ -322,6 +332,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_ENTITLEMENTS = RotaryClockApp/RotaryClockApp.device.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = RotaryClockApp/RotaryClockApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3ZLBAV6S6Y;

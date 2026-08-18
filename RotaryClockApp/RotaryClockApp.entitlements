@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      仅用于真实的导航业务。Simulator 可用它验证 CPWindow + CPMapTemplate；
+      真机签名必须等待 Apple 在 provisioning profile 中批准同一能力。
+    -->
+    <key>com.apple.developer.carplay-maps</key>
+    <true/>
+</dict>
+</plist>

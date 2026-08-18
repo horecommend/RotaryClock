@@ -6,7 +6,7 @@ struct RotaryClockApp: App {
     init() {
         // App 被打开时主动丢弃可能已经耗尽的旧 Widget 时间线。
         // 这不是用 App 每秒驱动组件，而只是让 WidgetKit 立刻取得一批新的、
-        // 带 150 分钟重叠缓冲的时间线；后续仍由系统独立运行。
+        // 带 14 小时重叠缓冲的时间线；后续仍由系统独立运行。
         WidgetCenter.shared.reloadTimelines(ofKind: "RotaryClockWidget")
     }
 
@@ -63,7 +63,7 @@ private struct ContentView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 }
 

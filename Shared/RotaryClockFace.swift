@@ -10,8 +10,11 @@ import ClockHandRotationKit
 /// Widget 的布局类型。
 /// 中号组件高度较矮，因此部分字号和间距会使用 compact 参数。
 enum RotaryClockLayout {
+    case small
     case medium
     case large
+    /// CarPlay 使用安全区后的可绘制宽度较窄，单独补偿分秒胶囊的位置。
+    case carPlay
 }
 
 struct RotaryClockFace: View {
@@ -41,7 +44,12 @@ struct RotaryClockFace: View {
     var body: some View {
         GeometryReader { proxy in
             let size = proxy.size
-            let compact = layout == .medium
+            // 小号和中号高度都较紧凑，共用紧凑字号；三种尺寸都保留日期、
+            // 星期和农历三行信息。
+            let compact = layout == .small || layout == .medium
+            let isSmall = layout == .small
+
+            // 小时由传入的时间线条目提供，确保透明 Widget 可稳定渲染。
             let hourText = String(format: "%02d", hour)
 
             // MARK: 整体缩放基准
@@ -55,7 +63,7 @@ struct RotaryClockFace: View {
             // 两个转盘必须共用这一个圆心，才能形成同心转盘。
             // 修改 dialCenter.x 会同时水平移动分钟盘和秒盘，不会破坏同心关系。
             let dialCenter = CGPoint(
-                x: size.width * (compact ? 0.05 : 0.05),
+                x: size.width * (0.05),
                 y: size.height / 2
             )
 
@@ -63,14 +71,17 @@ struct RotaryClockFace: View {
             // compact 的第一个倍率专门控制小号横向 Widget：减小会整体向左，
             // 增大会整体向右；这里只移动胶囊和分秒文字，不移动日期。
             // y 必须直接使用 dialCenter.y，保证圆盘中心和所有当前数值在同一水平线上。
+            // CarPlay 的画布从左侧系统栏之后开始；若仍使用 0.40，胶囊会比
+            // 手机/App 版本向右偏约 28pt。0.32 抵消该安全区产生的视觉位移。
+            let focusHorizontalRatio: CGFloat = layout == .carPlay ? 0.30 : 0.4
             let focusCenter = CGPoint(
-                x: dialCenter.x + size.width * (compact ? 0.40 : 0.40),
+                x: dialCenter.x + size.width * focusHorizontalRatio,
                 y: dialCenter.y
             )
 
-            // 小时与转盘使用原设计的同一水平基准，不额外右移。
-            // 之前只剩“时”是中文日期格式附加字词造成的，不是坐标问题。
-            let hourCenterX = dialCenter.x + 30
+            // 小时与转盘使用原设计的同一水平基准。给两位数保留足够宽度，
+            // 小号也不把左侧数字裁到组件外。
+            let hourCenterX = dialCenter.x + (isSmall ? 15 : 30)
 
             ZStack {
                 dialLayer(
@@ -89,17 +100,13 @@ struct RotaryClockFace: View {
                 // 这是设计图中最大的数字，不属于任何转盘。
                 // 字号倍率：中号 0.20、大号 0.18。
                 // position 的 x 倍率控制小时文字左右位置。
-                // 透明 Widget 宿主目前会丢弃小时的实时 currentDate Text，或按
-                // 中文 locale 追加“时”。小时采用当前 timeline entry 的数字值；
-                // Provider 每分钟提供条目，所以整点时会变为下一小时。分秒仍使用
-                // 系统实时 currentDate，保证秒级更新与 59:59 → 00:00 循环。
-                HStack(spacing: -unit * (compact ? 0.018 : 0.014)) {
-                    // 两个数字分别排版，各自保留完整字形边界；HStack 的负
-                    // spacing 只让两个边界互相靠近，不会裁掉第二位右侧。
+                // 透明 Widget 的实时小时格式会被合成器拆成“时”等残片；因此
+                // 使用 TimelineEntry 的两位数字，两个普通 Text 也便于调间距。
+                HStack(spacing: -unit * 0.018) {
                     Text(String(hourText.prefix(1)))
                     Text(String(hourText.suffix(1)))
                 }
-                    .font(.system(size: unit * (compact ? 0.20 : 0.22), weight: .black, design: .rounded))
+                .font(.system(size: unit * 0.2, weight: .black, design: .rounded))
                     .monospacedDigit()
                     .fixedSize()
                     .foregroundStyle(.white)
@@ -111,10 +118,11 @@ struct RotaryClockFace: View {
                     .position(focusCenter)
 
                 // MARK: 右侧日期
-                // x 的 0.82/0.79 控制日期左右位置；y 与圆盘中心保持一致。
-                dateBlock(unit: unit, compact: compact)
+                // 所有尺寸都显示三行信息：公历日期、星期、农历。
+                // 小号用更窄的日期区和较小字号，仍保留全部三行。
+                dateBlock(unit: unit, layout: layout)
                     .position(
-                        x: size.width * (compact ? 0.82 : 0.79),
+                        x: size.width * 0.8,
                         y: focusCenter.y
                     )
                     .zIndex(2)
@@ -181,8 +189,8 @@ struct RotaryClockFace: View {
         // 两个交点相距 0.17 unit。分钟和秒钟的文字中心使用同一间距，
         // 视觉上就会分别落在内圈、外圈的弧线中心，而不会挤在胶囊中央。
         let readoutCenterSeparation = unit * 0.17
-        let capsuleWidth = unit * (compact ? 0.31 : 0.35)
-        let capsuleHeight = unit * (compact ? 0.105 : 0.103)
+        let capsuleWidth = unit * 0.35
+        let capsuleHeight = unit * 0.105
 
         return ZStack {
             // 玻璃只作用在独立背景层。不要把 glassEffect 加到整个 ZStack，
@@ -220,7 +228,7 @@ struct RotaryClockFace: View {
                 .currentDate,
                 format: .dateTime.minute(.twoDigits).second(.twoDigits)
             )
-            .font(.system(size: unit * (compact ? 0.085 : 0.085), weight: .semibold, design: .rounded))
+            .font(.system(size: unit * 0.085, weight: .semibold, design: .rounded))
             .monospacedDigit()
             .foregroundStyle(.white)
             .lineLimit(1)
@@ -232,12 +240,12 @@ struct RotaryClockFace: View {
                 alignment: .center
             )
             // 系统动态时钟的可见字形会略微偏左，整体向右微调。
-            .offset(x: unit *  (compact ? 0.03 : 0.05))
+            .offset(x: unit *  0.04)
 
 #else
             // App 内由 TimelineView 每秒传入新时间，可以直接分别定位。
             Text(String(format: "%02d", minute))
-                .font(.system(size: unit * (compact ? 0.112 : 0.092), weight: .semibold, design: .rounded))
+                .font(.system(size: unit * 0.1, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(.white)
                 .position(
@@ -246,7 +254,7 @@ struct RotaryClockFace: View {
                 )
 
             Text(String(format: "%02d", second))
-                .font(.system(size: unit * (compact ? 0.078 : 0.064), weight: .regular, design: .rounded))
+                .font(.system(size: unit * 0.08, weight: .regular, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(.white)
                 .position(
@@ -261,25 +269,36 @@ struct RotaryClockFace: View {
 
     // MARK: - 公历与农历
 
-    private func dateBlock(unit: CGFloat, compact: Bool) -> some View {
-        VStack(spacing: unit * (compact ? 0.018 : 0.024)) {
+    private func dateBlock(unit: CGFloat, layout: RotaryClockLayout) -> some View {
+        // 三行独立排版，不把“日期 星期”挤在同一行；小号也完整显示。
+        VStack(spacing: unit * (layout == .small ? 0.05 : 0.024)) {
+            // 和小时一样，由分钟级 TimelineEntry 提供。这样避开透明 Widget
+            // 宿主对多个 `.currentDate` 文本的渲染缺陷。
             Text(solarDate)
+            Text(weekday)
             Text(lunarDate)
         }
-        .font(.system(size: unit * (compact ? 0.038 : 0.032), weight: .regular, design: .rounded))
+        .font(.system(size: unit * (layout == .small ? 0.08 : 0.05), weight: .regular, design: .rounded))
         .monospacedDigit()
         .foregroundStyle(.white)
         .lineLimit(1)
-        .minimumScaleFactor(0.62)
-        // 日期区域宽度；文字被压缩时可适当增大此值。
-        .frame(width: unit * (compact ? 0.34 : 0.31))
+        .minimumScaleFactor(0.58)
+        // 日期区域宽度；小号靠右放置，避免压住胶囊中的分秒。
+        .frame(width: unit * 0.33)
     }
 
     private var solarDate: String {
         let formatter = DateFormatter()
-        // 使用简体中文，确保星期显示为“星期五”而不是英文。
+        // 使用简体中文，确保中文日期不会受桌面语言影响。
         formatter.locale = Locale(identifier: "zh_Hans_CN")
-        formatter.dateFormat = "MM月dd日  EEEE"
+        formatter.dateFormat = "MM月dd日"
+        return formatter.string(from: date)
+    }
+
+    private var weekday: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_Hans_CN")
+        formatter.dateFormat = "EEEE"
         return formatter.string(from: date)
     }
 
